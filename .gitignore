@@ -134,3 +134,7 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+uploads/*
+# except one (empty) file to have the folder in version control
+!uploads/.gitkeep
