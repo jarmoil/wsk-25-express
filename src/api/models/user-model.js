@@ -8,7 +8,7 @@ const userItems = [
     password: 'password',
   },
   {
-    user_id: 3610,
+    user_id: 3608,
     name: 'Jane Doe',
     username: 'janedoe',
     email: 'jane@metropolia.fi',
@@ -22,7 +22,7 @@ const listAllUsers = () => {
 };
 
 const findUserById = (id) => {
-  return userItems.find((item) => item.user_id === id);
+  return userItems.find((item) => item.user_id == id);
 };
 
 const addUser = (user) => {
@@ -39,4 +39,34 @@ const addUser = (user) => {
   return {user_id: newId};
 };
 
-export {listAllUsers, findUserById, addUser};
+const updateUser = (id, updatedData) => {
+  if (isNaN(id)) {
+    return {message: 'Invalid ID format. ID must be a number.'};
+  }
+  const userIndex = userItems.findIndex((item) => item.user_id == id);
+  if (userIndex !== -1) {
+    userItems[userIndex] = {
+      ...userItems[userIndex],
+      ...updatedData,
+    };
+    return {message: 'User item updated', updateUser: userItems[userIndex]};
+  } else {
+    return {message: 'User not found'};
+  }
+};
+
+const deleteUser = (id) => {
+  if (isNaN(id)) {
+    return {message: 'Invalid ID format. ID must be a number.'};
+  }
+
+  const userIndex = userItems.findIndex((item) => item.user_id == id);
+  if (userIndex !== -1) {
+    const deletedUser = userItems.splice(userIndex, 1);
+    return {message: 'User deleted successfully.', deletedUser: deletedUser[0]};
+  } else {
+    return {message: 'User not found.'};
+  }
+};
+
+export {listAllUsers, findUserById, addUser, updateUser, deleteUser};

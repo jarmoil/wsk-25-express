@@ -23,7 +23,6 @@ const listAllCats = () => {
 };
 
 const findCatById = (id) => {
-  console.log(catItems.find((item) => item.cat_id == id));
   return catItems.find((item) => item.cat_id == id);
 };
 
@@ -41,4 +40,34 @@ const addCat = (cat) => {
   return {cat_id: newId};
 };
 
-export {listAllCats, findCatById, addCat};
+const updateCat = (id, updatedData) => {
+  if (isNaN(id)) {
+    return {message: 'Invalid ID format. ID must be a number.'};
+  }
+  const catIndex = catItems.findIndex((item) => item.cat_id == id);
+  if (catIndex !== -1) {
+    catItems[catIndex] = {
+      ...catItems[catIndex],
+      ...updatedData,
+    };
+    return {message: 'Cat item updated.', updateCat: catItems[catIndex]};
+  } else {
+    return {message: 'Cat not found.'};
+  }
+};
+
+const deleteCat = (id) => {
+  if (isNaN(id)) {
+    return {message: 'Invalid ID format. ID must be a number.'};
+  }
+
+  const catIndex = catItems.findIndex((item) => item.cat_id == id);
+  if (catIndex !== -1) {
+    const deletedCat = catItems.splice(catIndex, 1);
+    return {message: 'Cat deleted successfully.', deletedCat: deletedCat[0]};
+  } else {
+    return {message: 'Cat not found.'};
+  }
+};
+
+export {listAllCats, findCatById, addCat, updateCat, deleteCat};
