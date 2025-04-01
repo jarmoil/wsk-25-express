@@ -4,14 +4,15 @@ import {
   listAllCats,
   updateCat,
   deleteCat as deleteCatModel,
+  findCatByOwnerId,
 } from '../models/cat-model.js';
 
-const getCat = (req, res) => {
-  res.json(listAllCats());
+const getCat = async (req, res) => {
+  res.json(await listAllCats());
 };
 
-const getCatById = (req, res) => {
-  const cat = findCatById(req.params.id);
+const getCatById = async (req, res) => {
+  const cat = await findCatById(req.params.id);
   if (cat) {
     res.json(cat);
   } else {
@@ -19,7 +20,7 @@ const getCatById = (req, res) => {
   }
 };
 
-const postCat = (req, res) => {
+const postCat = async (req, res) => {
   // Log form data and file data
   console.log('Form Data:', req.body);
   // Check if a file was uploaded
@@ -31,7 +32,7 @@ const postCat = (req, res) => {
   // Add the filename to the request body
   req.body.filename = req.file.filename;
 
-  const result = addCat(req.body);
+  const result = await addCat(req.body);
   if (result.cat_id) {
     res.status(201).json({message: 'New cat added.', result});
   } else {
@@ -39,10 +40,10 @@ const postCat = (req, res) => {
   }
 };
 
-const putCat = (req, res) => {
+const putCat = async (req, res) => {
   const id = req.params.id;
   const updatedData = req.body;
-  const result = updateCat(id, updatedData);
+  const result = await updateCat(id, updatedData);
   if (result.updatedCat) {
     res.status(200).json(result);
   } else {
@@ -50,9 +51,9 @@ const putCat = (req, res) => {
   }
 };
 
-const deleteCat = (req, res) => {
+const deleteCat = async (req, res) => {
   const id = req.params.id;
-  const result = deleteCatModel(id);
+  const result = await deleteCatModel(id);
 
   if (result.deletedCat) {
     res.status(200).json(result);
@@ -61,4 +62,14 @@ const deleteCat = (req, res) => {
   }
 };
 
-export {getCat, getCatById, postCat, putCat, deleteCat};
+const getCatByOwnerId = async (req, res) => {
+  const ownerId = req.params.id;
+  const cats = await findCatByOwnerId(ownerId);
+  if (cats.length > 0) {
+    res.json(cats);
+  } else {
+    res.status(404).json({message: 'No cats found for this owner.'});
+  }
+};
+
+export {getCat, getCatById, postCat, putCat, deleteCat, getCatByOwnerId};

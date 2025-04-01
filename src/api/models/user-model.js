@@ -1,71 +1,72 @@
-const userItems = [
-  {
-    user_id: 3609,
-    name: 'John Doe',
-    username: 'johndoe',
-    email: 'john@metropolia.fi',
-    role: 'user',
-    password: 'password',
-  },
-  {
-    user_id: 3608,
-    name: 'Jane Doe',
-    username: 'janedoe',
-    email: 'jane@metropolia.fi',
-    role: 'admin',
-    password: 'password',
-  },
-];
+import promisePool from '../../utils/database.js';
 
-const listAllUsers = () => {
-  return userItems;
+const listAllUsers = async () => {
+  const [rows] = await promisePool.execute('SELECT * FROM wsk_users');
+  console.log('rows', rows);
+  return rows;
 };
 
-const findUserById = (id) => {
-  return userItems.find((item) => item.user_id == id);
-};
-
-const addUser = (user) => {
-  const {name, username, email, role, password} = user;
-  const newId = userItems[0].user_id + 1;
-  userItems.unshift({
-    user_id: newId,
-    name,
-    username,
-    email,
-    role,
-    password,
-  });
-  return {user_id: newId};
-};
-
-const updateUser = (id, updatedData) => {
-  if (isNaN(id)) {
-    return {message: 'Invalid ID format. ID must be a number.'};
+const findUserById = async (id) => {
+  const [rows] = await promisePool.execute(
+    'SELECT * FROM wsk_users WHERE user_id = ?',
+    [id]
+  );
+  console.log('rows', rows);
+  if (rows.length === 0) {
+    return false;
   }
-  const userIndex = userItems.findIndex((item) => item.user_id == id);
-  if (userIndex !== -1) {
-    userItems[userIndex] = {
-      ...userItems[userIndex],
-      ...updatedData,
-    };
-    return {message: 'User item updated', updateUser: userItems[userIndex]};
-  } else {
-    return {message: 'User not found'};
-  }
+  return rows[0];
 };
 
-const deleteUser = (id) => {
-  if (isNaN(id)) {
-    return {message: 'Invalid ID format. ID must be a number.'};
+const addUser = async (user) => {
+  const {name, username, password, email} = user;
+  const sql = `INSERT INTO wsk_users (name, username, password, email)
+               VALUES (?, ?, ?, ?)`;
+  const params = [name, username, password, email];
+  const rows = await promisePool.execute(sql, params);
+  console.log('rows', rows);
+  if (rows[0].affectedRows === 0) {
+    return false;
   }
+  return {user_id: rows[0].insertId};
+};
 
-  const userIndex = userItems.findIndex((item) => item.user_id == id);
-  if (userIndex !== -1) {
-    const deletedUser = userItems.splice(userIndex, 1);
-    return {message: 'User deleted successfully.', deletedUser: deletedUser[0]};
-  } else {
-    return {message: 'User not found.'};
+const updateUser = async (user, id) => {
+  const sql = promisePool.format(`UPDATE wsk_users SET ? WHERE user_id = ?`, [
+    user,
+    id,
+  ]);
+  const rows = await promisePool.execute(sql);
+  console.log('rows', rows);
+  if (rows[0].affectedRows === 0) {
+    return false;
+  }
+  return {message: 'success'};
+};
+
+const deleteUser = async (id) => {
+  const connection = await promisePool.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    await connection.execute('DELETE FROM wsk_cats WHERE owner = ?', [id]);
+    const [result] = await connection.execute(
+      'DELETE FROM wsk_users WHERE user_id = ?',
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return {message: 'User not found'};
+    }
+
+    await connection.commit();
+    return {message: 'success'};
+  } catch (error) {
+    await connection.rollback();
+    console.error('Transaction rolled back due to error:', error);
+    return {message: 'Transaction failed'};
+  } finally {
+    connection.release();
   }
 };
 
