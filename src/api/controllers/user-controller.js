@@ -5,6 +5,7 @@ import {
   updateUser,
   deleteUser as deleteUserModel,
 } from '../models/user-model.js';
+import bcrypt from 'bcrypt';
 
 const getUser = async (req, res) => {
   res.json(await listAllUsers());
@@ -20,6 +21,7 @@ const getUserById = async (req, res) => {
 };
 
 const postUser = async (req, res) => {
+  req.body.password = bcrypt.hashSync(req.body.password, 10);
   req.body.filename = req.file.filename;
 
   const result = await addUser(req.body);

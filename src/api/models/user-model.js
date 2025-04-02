@@ -20,6 +20,7 @@ const findUserById = async (id) => {
 
 const addUser = async (user) => {
   const {name, username, password, email} = user;
+  console.log('user', user);
   const sql = `INSERT INTO wsk_users (name, username, password, email)
                VALUES (?, ?, ?, ?)`;
   const params = [name, username, password, email];
