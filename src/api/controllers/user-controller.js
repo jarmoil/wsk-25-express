@@ -1,10 +1,11 @@
 import {
-  listAllUsers,
-  findUserById,
   addUser,
-  updateUser,
-  deleteUser as deleteUserModel,
+  findUserById,
+  listAllUsers,
+  modifyUser,
+  removeUser,
 } from '../models/user-model.js';
+
 import bcrypt from 'bcrypt';
 
 const getUser = async (req, res) => {
@@ -21,35 +22,44 @@ const getUserById = async (req, res) => {
 };
 
 const postUser = async (req, res) => {
-  req.body.password = bcrypt.hashSync(req.body.password, 10);
-  req.body.filename = req.file.filename;
+  try {
+    const {name, username, password, email} = req.body;
 
-  const result = await addUser(req.body);
-  if (result.user_id) {
-    res.status(201);
-    res.json({message: 'New user added.', result});
+    // Validate required fields
+    if (!name || !username || !password || !email) {
+      return res.status(400).json({error: 'Missing required fields'});
+    }
+
+    req.body.password = bcrypt.hashSync(password, 10);
+    const result = await addUser(req.body);
+
+    if (result.user_id) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json({error: 'Failed to add user'});
+    }
+  } catch (error) {
+    console.error('Error in POST /users:', error);
+    res.status(500).json({error: 'Internal Server Error'});
+  }
+};
+const putUser = async (req, res) => {
+  const result = await modifyUser(req.body, req.params.id);
+  if (result.message) {
+    res.status(200);
+    res.json(result);
   } else {
     res.sendStatus(400);
   }
 };
-const putUser = async (req, res) => {
-  const id = req.params.id;
-  const updatedData = req.body;
-  const result = await updateUser(id, updatedData);
-  if (result.updatedUser) {
-    res.status(200).json(result);
-  } else {
-    res.status(404).json(result);
-  }
-};
 
 const deleteUser = async (req, res) => {
-  const id = req.params.id;
-  const result = await deleteUserModel(id);
-  if (result.deletedUser) {
-    res.status(200).json(result);
+  const result = await removeUser(req.params.id);
+  if (result.message) {
+    res.status(200);
+    res.json(result);
   } else {
-    res.status(404).json(result);
+    res.sendStatus(400);
   }
 };
 

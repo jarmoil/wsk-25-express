@@ -2,8 +2,8 @@ import {
   addCat,
   findCatById,
   listAllCats,
-  updateCat,
-  deleteCat as deleteCatModel,
+  modifyCat,
+  removeCat,
   findCatByOwnerId,
 } from '../models/cat-model.js';
 
@@ -21,44 +21,33 @@ const getCatById = async (req, res) => {
 };
 
 const postCat = async (req, res) => {
-  // Log form data and file data
-  console.log('Form Data:', req.body);
-  // Check if a file was uploaded
-  if (!req.file) {
-    return res.status(400).json({message: 'File upload is required.'});
-  }
-  console.log('File Data:', req.file);
-
-  // Add the filename to the request body
   req.body.filename = req.file.filename;
-
   const result = await addCat(req.body);
   if (result.cat_id) {
-    res.status(201).json({message: 'New cat added.', result});
+    res.status(201);
+    res.json(result);
   } else {
     res.sendStatus(400);
   }
 };
 
 const putCat = async (req, res) => {
-  const id = req.params.id;
-  const updatedData = req.body;
-  const result = await updateCat(id, updatedData);
-  if (result.updatedCat) {
-    res.status(200).json(result);
+  const result = await modifyCat(req.body, req.params.id);
+  if (result.message) {
+    res.status(200);
+    res.json(result);
   } else {
-    res.status(404).json(result);
+    res.sendStatus(404);
   }
 };
 
 const deleteCat = async (req, res) => {
-  const id = req.params.id;
-  const result = await deleteCatModel(id);
-
-  if (result.deletedCat) {
-    res.status(200).json(result);
+  const result = await removeCat(req.params.id);
+  if (result.message) {
+    res.status(200);
+    res.json(result);
   } else {
-    res.status(404).json(result);
+    res.sendStatus(404);
   }
 };
 

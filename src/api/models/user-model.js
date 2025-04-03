@@ -19,20 +19,27 @@ const findUserById = async (id) => {
 };
 
 const addUser = async (user) => {
-  const {name, username, password, email} = user;
-  console.log('user', user);
-  const sql = `INSERT INTO wsk_users (name, username, password, email)
-               VALUES (?, ?, ?, ?)`;
-  const params = [name, username, password, email];
-  const rows = await promisePool.execute(sql, params);
-  console.log('rows', rows);
-  if (rows[0].affectedRows === 0) {
-    return false;
+  try {
+    const {name, username, password, email} = user;
+    console.log('user', user);
+
+    const sql = `INSERT INTO wsk_users (name, username, password, email)
+                 VALUES (?, ?, ?, ?)`;
+    const params = [name, username, password, email];
+    const [rows] = await promisePool.execute(sql, params);
+
+    console.log('rows', rows);
+    if (rows.affectedRows === 0) {
+      return false;
+    }
+    return {user_id: rows.insertId};
+  } catch (error) {
+    console.error('Error in addUser:', error);
+    throw error; // Re-throw the error to be caught in the controller
   }
-  return {user_id: rows[0].insertId};
 };
 
-const updateUser = async (user, id) => {
+const modifyUser = async (user, id) => {
   const sql = promisePool.format(`UPDATE wsk_users SET ? WHERE user_id = ?`, [
     user,
     id,
@@ -45,7 +52,7 @@ const updateUser = async (user, id) => {
   return {message: 'success'};
 };
 
-const deleteUser = async (id) => {
+const removeUser = async (id) => {
   const connection = await promisePool.getConnection();
   try {
     await connection.beginTransaction();
@@ -71,4 +78,19 @@ const deleteUser = async (id) => {
   }
 };
 
-export {listAllUsers, findUserById, addUser, updateUser, deleteUser};
+const login = async (username) => {
+  try {
+    const sql = `SELECT * FROM wsk_users WHERE username = ?`;
+    const [rows] = await promisePool.execute(sql, [username]);
+
+    if (rows.length === 0) {
+      return false;
+    }
+    return rows[0];
+  } catch (error) {
+    console.error('Error in login:', error);
+    throw error;
+  }
+};
+
+export {listAllUsers, findUserById, addUser, modifyUser, removeUser, login};

@@ -33,7 +33,7 @@ const addCat = async (cat) => {
   return {cat_id: rows[0].insertId};
 };
 
-const updateCat = async (cat, id) => {
+const modifyCat = async (cat, id) => {
   const sql = promisePool.format(`UPDATE wsk_cats SET ? WHERE cat_id = ?`, [
     cat,
     id,
@@ -46,7 +46,7 @@ const updateCat = async (cat, id) => {
   return {message: 'success'};
 };
 
-const deleteCat = async (id) => {
+const removeCat = async (id) => {
   const [rows] = await promisePool.execute(
     'DELETE FROM wsk_cats WHERE cat_id = ?',
     [id]
@@ -73,7 +73,7 @@ export {
   listAllCats,
   findCatById,
   addCat,
-  updateCat,
-  deleteCat,
+  modifyCat,
+  removeCat,
   findCatByOwnerId,
 };
