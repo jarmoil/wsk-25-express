@@ -19,55 +19,83 @@ const findUserById = async (id) => {
 };
 
 const addUser = async (user) => {
-  const {name, username, password, email} = user;
-  const sql = `INSERT INTO wsk_users (name, username, password, email)
-               VALUES (?, ?, ?, ?)`;
-  const params = [name, username, password, email];
-  const rows = await promisePool.execute(sql, params);
-  console.log('rows', rows);
-  if (rows[0].affectedRows === 0) {
-    return false;
-  }
-  return {user_id: rows[0].insertId};
-};
-
-const updateUser = async (user, id) => {
-  const sql = promisePool.format(`UPDATE wsk_users SET ? WHERE user_id = ?`, [
-    user,
-    id,
-  ]);
-  const rows = await promisePool.execute(sql);
-  console.log('rows', rows);
-  if (rows[0].affectedRows === 0) {
-    return false;
-  }
-  return {message: 'success'};
-};
-
-const deleteUser = async (id) => {
-  const connection = await promisePool.getConnection();
   try {
-    await connection.beginTransaction();
+    const {name, username, password, email} = user;
+    console.log('user', user);
 
-    await connection.execute('DELETE FROM wsk_cats WHERE owner = ?', [id]);
-    const [result] = await connection.execute(
-      'DELETE FROM wsk_users WHERE user_id = ?',
-      [id]
-    );
+    const sql = `INSERT INTO wsk_users (name, username, password, email)
+                 VALUES (?, ?, ?, ?)`;
+    const params = [name, username, password, email];
+    const [rows] = await promisePool.execute(sql, params);
 
-    if (result.affectedRows === 0) {
-      return {message: 'User not found'};
+    console.log('rows', rows);
+    if (rows.affectedRows === 0) {
+      return false;
     }
+    return {user_id: rows.insertId};
+  } catch (error) {
+    console.error('Error in addUser:', error);
+    throw error; // Re-throw the error to be caught in the controller
+  }
+};
 
-    await connection.commit();
+const modifyUser = async (user, id, role) => {
+  try {
+    let sql;
+    if (role === 'admin') {
+      sql = promisePool.format(`UPDATE wsk_users SET ? WHERE user_id = ?`, [
+        user,
+        id,
+      ]);
+    } else {
+      sql = promisePool.format(
+        `UPDATE wsk_users SET ? WHERE user_id = ? AND user_id = ?`,
+        [user, id, id]
+      );
+    }
+    const [rows] = await promisePool.execute(sql);
+    if (rows.affectedRows === 0) {
+      return false;
+    }
     return {message: 'success'};
   } catch (error) {
-    await connection.rollback();
-    console.error('Transaction rolled back due to error:', error);
-    return {message: 'Transaction failed'};
-  } finally {
-    connection.release();
+    console.error('Error in modifyUser:', error);
+    throw error;
   }
 };
 
-export {listAllUsers, findUserById, addUser, updateUser, deleteUser};
+const removeUser = async (id, role) => {
+  try {
+    let sql;
+    if (role === 'admin') {
+      sql = `DELETE FROM wsk_users WHERE user_id = ?`;
+    } else {
+      sql = `DELETE FROM wsk_users WHERE user_id = ? AND user_id = ?`;
+    }
+    const [rows] = await promisePool.execute(sql, [id, id]);
+    if (rows.affectedRows === 0) {
+      return false;
+    }
+    return {message: 'success'};
+  } catch (error) {
+    console.error('Error in removeUser:', error);
+    throw error;
+  }
+};
+
+const login = async (username) => {
+  try {
+    const sql = `SELECT * FROM wsk_users WHERE username = ?`;
+    const [rows] = await promisePool.execute(sql, [username]);
+
+    if (rows.length === 0) {
+      return false;
+    }
+    return rows[0];
+  } catch (error) {
+    console.error('Error in login:', error);
+    throw error;
+  }
+};
+
+export {listAllUsers, findUserById, addUser, modifyUser, removeUser, login};

@@ -1,10 +1,12 @@
 import {
-  listAllUsers,
-  findUserById,
   addUser,
-  updateUser,
-  deleteUser as deleteUserModel,
+  findUserById,
+  listAllUsers,
+  modifyUser,
+  removeUser,
 } from '../models/user-model.js';
+
+import bcrypt from 'bcrypt';
 
 const getUser = async (req, res) => {
   res.json(await listAllUsers());
@@ -20,34 +22,62 @@ const getUserById = async (req, res) => {
 };
 
 const postUser = async (req, res) => {
-  req.body.filename = req.file.filename;
+  try {
+    const {name, username, password, email} = req.body;
 
-  const result = await addUser(req.body);
-  if (result.user_id) {
-    res.status(201);
-    res.json({message: 'New user added.', result});
-  } else {
-    res.sendStatus(400);
+    // Validate required fields
+    if (!name || !username || !password || !email) {
+      return res.status(400).json({error: 'Missing required fields'});
+    }
+
+    req.body.password = bcrypt.hashSync(password, 10);
+    const result = await addUser(req.body);
+
+    if (result.user_id) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json({error: 'Failed to add user'});
+    }
+  } catch (error) {
+    console.error('Error in POST /users:', error);
+    res.status(500).json({error: 'Internal Server Error'});
   }
 };
 const putUser = async (req, res) => {
-  const id = req.params.id;
-  const updatedData = req.body;
-  const result = await updateUser(id, updatedData);
-  if (result.updatedUser) {
+  const {user_id, role} = res.locals.user; // Extract user info from token
+  const targetUserId = parseInt(req.params.id, 10);
+
+  // Allow only the user themselves or an admin to update
+  if (user_id !== targetUserId && role !== 'admin') {
+    return res
+      .status(403)
+      .json({message: 'Forbidden: Cannot modify this user'});
+  }
+
+  const result = await modifyUser(req.body, targetUserId, role);
+  if (result.message) {
     res.status(200).json(result);
   } else {
-    res.status(404).json(result);
+    res.status(400).json({message: 'Failed to update user'});
   }
 };
 
 const deleteUser = async (req, res) => {
-  const id = req.params.id;
-  const result = await deleteUserModel(id);
-  if (result.deletedUser) {
+  const {user_id, role} = res.locals.user; // Extract user info from token
+  const targetUserId = parseInt(req.params.id, 10);
+
+  // Allow only the user themselves or an admin to delete
+  if (user_id !== targetUserId && role !== 'admin') {
+    return res
+      .status(403)
+      .json({message: 'Forbidden: Cannot delete this user'});
+  }
+
+  const result = await removeUser(targetUserId, role);
+  if (result.message) {
     res.status(200).json(result);
   } else {
-    res.status(404).json(result);
+    res.status(400).json({message: 'Failed to delete user'});
   }
 };
 
