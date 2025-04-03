@@ -39,42 +39,47 @@ const addUser = async (user) => {
   }
 };
 
-const modifyUser = async (user, id) => {
-  const sql = promisePool.format(`UPDATE wsk_users SET ? WHERE user_id = ?`, [
-    user,
-    id,
-  ]);
-  const rows = await promisePool.execute(sql);
-  console.log('rows', rows);
-  if (rows[0].affectedRows === 0) {
-    return false;
-  }
-  return {message: 'success'};
-};
-
-const removeUser = async (id) => {
-  const connection = await promisePool.getConnection();
+const modifyUser = async (user, id, role) => {
   try {
-    await connection.beginTransaction();
-
-    await connection.execute('DELETE FROM wsk_cats WHERE owner = ?', [id]);
-    const [result] = await connection.execute(
-      'DELETE FROM wsk_users WHERE user_id = ?',
-      [id]
-    );
-
-    if (result.affectedRows === 0) {
-      return {message: 'User not found'};
+    let sql;
+    if (role === 'admin') {
+      sql = promisePool.format(`UPDATE wsk_users SET ? WHERE user_id = ?`, [
+        user,
+        id,
+      ]);
+    } else {
+      sql = promisePool.format(
+        `UPDATE wsk_users SET ? WHERE user_id = ? AND user_id = ?`,
+        [user, id, id]
+      );
     }
-
-    await connection.commit();
+    const [rows] = await promisePool.execute(sql);
+    if (rows.affectedRows === 0) {
+      return false;
+    }
     return {message: 'success'};
   } catch (error) {
-    await connection.rollback();
-    console.error('Transaction rolled back due to error:', error);
-    return {message: 'Transaction failed'};
-  } finally {
-    connection.release();
+    console.error('Error in modifyUser:', error);
+    throw error;
+  }
+};
+
+const removeUser = async (id, role) => {
+  try {
+    let sql;
+    if (role === 'admin') {
+      sql = `DELETE FROM wsk_users WHERE user_id = ?`;
+    } else {
+      sql = `DELETE FROM wsk_users WHERE user_id = ? AND user_id = ?`;
+    }
+    const [rows] = await promisePool.execute(sql, [id, id]);
+    if (rows.affectedRows === 0) {
+      return false;
+    }
+    return {message: 'success'};
+  } catch (error) {
+    console.error('Error in removeUser:', error);
+    throw error;
   }
 };
 

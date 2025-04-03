@@ -32,22 +32,28 @@ const postCat = async (req, res) => {
 };
 
 const putCat = async (req, res) => {
-  const result = await modifyCat(req.body, req.params.id);
+  const {user_id, role} = res.locals.user; // Extract user info from token
+  const catId = parseInt(req.params.id, 10);
+
+  // Allow only the owner or an admin to update
+  const result = await modifyCat(req.body, catId, user_id, role);
   if (result.message) {
-    res.status(200);
-    res.json(result);
+    res.status(200).json(result);
   } else {
-    res.sendStatus(404);
+    res.status(403).json({message: 'Forbidden: Cannot modify this cat'});
   }
 };
 
 const deleteCat = async (req, res) => {
-  const result = await removeCat(req.params.id);
+  const {user_id, role} = res.locals.user; // Extract user info from token
+  const catId = parseInt(req.params.id, 10);
+
+  // Allow only the owner or an admin to delete
+  const result = await removeCat(catId, user_id, role);
   if (result.message) {
-    res.status(200);
-    res.json(result);
+    res.status(200).json(result);
   } else {
-    res.sendStatus(404);
+    res.status(403).json({message: 'Forbidden: Cannot delete this cat'});
   }
 };
 

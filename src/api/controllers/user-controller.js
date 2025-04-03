@@ -44,22 +44,40 @@ const postUser = async (req, res) => {
   }
 };
 const putUser = async (req, res) => {
-  const result = await modifyUser(req.body, req.params.id);
+  const {user_id, role} = res.locals.user; // Extract user info from token
+  const targetUserId = parseInt(req.params.id, 10);
+
+  // Allow only the user themselves or an admin to update
+  if (user_id !== targetUserId && role !== 'admin') {
+    return res
+      .status(403)
+      .json({message: 'Forbidden: Cannot modify this user'});
+  }
+
+  const result = await modifyUser(req.body, targetUserId, role);
   if (result.message) {
-    res.status(200);
-    res.json(result);
+    res.status(200).json(result);
   } else {
-    res.sendStatus(400);
+    res.status(400).json({message: 'Failed to update user'});
   }
 };
 
 const deleteUser = async (req, res) => {
-  const result = await removeUser(req.params.id);
+  const {user_id, role} = res.locals.user; // Extract user info from token
+  const targetUserId = parseInt(req.params.id, 10);
+
+  // Allow only the user themselves or an admin to delete
+  if (user_id !== targetUserId && role !== 'admin') {
+    return res
+      .status(403)
+      .json({message: 'Forbidden: Cannot delete this user'});
+  }
+
+  const result = await removeUser(targetUserId, role);
   if (result.message) {
-    res.status(200);
-    res.json(result);
+    res.status(200).json(result);
   } else {
-    res.sendStatus(400);
+    res.status(400).json({message: 'Failed to delete user'});
   }
 };
 
