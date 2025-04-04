@@ -1,4 +1,4 @@
-Metropolia users Link: https://users.metropolia.fi/~jarmoil/Web-Sovelluskehitys/Week3/wsk-25-express/src/
+Metropolia users Link: https://users.metropolia.fi/~jarmoil/Web-Sovelluskehitys/Week3/wsk-25-express/
 
 ## Authorization Rules
 
